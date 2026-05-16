@@ -1,12 +1,13 @@
 # Informe de Proyecto
+
 ## Simulación basada en Eventos Discretos
 
 ---
 
-## Generales del Estudiante
+## Generales
 
 | | |
-|---|---|
+| --- | --- |
 | **Nombre y apellidos** | Melissa Maureen Sales Brito |
 | **Grupo** | C-311 |
 | **Asignatura** | Simulación |
@@ -18,7 +19,7 @@
 
 ## Orden del Problema Asignado
 
-**Problema 5 — Aeropuerto de Barajas**
+### Problema 5 — Aeropuerto de Barajas
 
 El Aeropuerto de Barajas cuenta con 5 pistas de aterrizaje dedicadas a aviones de carga. Se considera que una pista está ocupada cuando hay un avión aterrizando, despegando, cargando o descargando mercancía, o recargando combustible. El objetivo es simular el comportamiento del aeropuerto durante una semana y **estimar el tiempo total en que se encuentra vacía cada una de las 5 pistas**.
 
@@ -50,6 +51,7 @@ El tiempo libre de cada pista se acumula de forma incremental: cada vez que una 
 ### 5. Generación de variables aleatorias desde cero
 
 Todas las muestras aleatorias se generan sin bibliotecas externas, implementando:
+
 - Un **generador congruencial lineal (LCG)** como fuente de uniformes U(0,1).
 - El **método de la transformada inversa** para la distribución exponencial.
 - El **método de Box-Muller** para la distribución normal.
@@ -65,15 +67,17 @@ Una única réplica no es suficiente para caracterizar el sistema estocástico. 
 
 ### Descripción del sistema
 
-Un avión llega al aeropuerto y espera en cola (FIFO) hasta que exista una pista vacía. Al ocupar una pista, el avión realiza la siguiente secuencia:
+Un avión llega al aeropuerto y espera en cola (FIFO) hasta que exista una pista vacía. Según el enunciado, una pista se considera **ocupada** mientras haya un avión aterrizando, despegando, cargando o descargando mercancía, o recargando combustible. Es decir, la pista permanece ocupada durante **todo el tiempo que el avión está en ella**, desde que toca pista hasta que termina el despegue.
 
-1. **Aterrizaje** — Normal(μ=10, σ²=5) minutos — comienza al ocupar la pista.
-2. **Recarga de combustible** — Exp(λ=1/30) minutos — comienza simultáneamente con el aterrizaje.
-3. **Carga/descarga de mercancía** — con probabilidad 0.5 ocurre; duración Exp(λ=1/30) minutos — comienza simultáneamente con el aterrizaje.
-4. **Verificación de avería** — con probabilidad 0.1 hay una rotura; reparación Exp(λ=1/15) minutos — se verifica cuando las fases 1, 2 y 3 han concluido.
+Al asignársele una pista, el avión atraviesa las siguientes fases:
+
+1. **Aterrizaje** — Normal(μ=10, σ²=5) minutos — ocupa la pista desde este momento.
+2. **Recarga de combustible** — Exp(λ=1/30) minutos — transcurre en paralelo con el aterrizaje, comenzando desde que el avión toca pista.
+3. **Carga/descarga de mercancía** — la probabilidad de que un avión cargue o descargue sigue una distribución Uniforme(0,1): se genera p ~ U(0,1) y el avión carga con esa probabilidad p; duración Exp(λ=1/30) minutos — transcurre en paralelo con las fases 1 y 2.
+4. **Verificación de avería** — probabilidad 0.1 de rotura, detectada justo antes del despegue; reparación Exp(λ=1/15) minutos — se verifica solo cuando las fases 1, 2 y 3 han concluido.
 5. **Despegue** — Normal(μ=10, σ²=5) minutos — comienza tras resolver la avería (si la hubo).
 
-La pista queda libre únicamente al finalizar el despegue. El horizonte de simulación es T = 7 × 24 × 60 = 10 080 minutos (una semana). Al alcanzar T, no se admiten nuevos aviones pero los que ya están en pista o en cola completan su ciclo.
+La pista queda libre únicamente al finalizar el despegue. Durante todas las fases anteriores la pista permanece ocupada, lo que es consistente con la definición del enunciado. El horizonte de simulación es T = 7 × 24 × 60 = 10 080 minutos (una semana). Al alcanzar T, no se admiten nuevos aviones pero los que ya están en pista o en cola completan su ciclo.
 
 Los tiempos entre llegadas de aviones siguen una distribución Exp(λ=1/20), con una media de 20 minutos entre aviones.
 
@@ -82,7 +86,7 @@ Los tiempos entre llegadas de aviones siguen una distribución Exp(λ=1/20), con
 El sistema cuenta con **seis tipos de eventos**:
 
 | Evento | Condición de disparo |
-|---|---|
+| --- | --- |
 | ARRIBO | Un nuevo avión llega al aeropuerto |
 | FIN_ATERRIZAJE | El avión completa la fase de aterrizaje |
 | FIN_COMBUSTIBLE | El avión completa la recarga de combustible |
@@ -271,7 +275,7 @@ X = True   si U < p
 X = False  si U ≥ p
 ```
 
-con U ~ U(0,1). Se usa con p = 0.5 para la decisión de carga/descarga y con p = 0.1 para la avería.
+con U ~ U(0,1). Se usa con p = 0.1 para la avería. Para la carga/descarga, la probabilidad p en sí es una variable U(0,1): se genera p ~ U(0,1) para cada avión y luego se evalúa un segundo U contra ese p, modelando que la probabilidad de cargar/descargar es aleatoria y uniforme.
 
 ---
 
@@ -283,32 +287,32 @@ Se ejecutaron **30 réplicas independientes** del sistema, cada una simulando un
 
 | Pista | Media idle (min) | % de T | Desv. estándar | Mínimo | Máximo | IC 95% (min) |
 | --- | --- | --- | --- | --- | --- | --- |
-| Pista 1 | 2 721.2 | 27.0 % | 252.1 | 2 350.7 | 3 308.6 | [2 627.1 — 2 815.3] |
-| Pista 2 | 3 750.4 | 37.2 % | 362.1 | 2 786.2 | 4 239.7 | [3 615.2 — 3 885.6] |
-| Pista 3 | 5 051.9 | 50.1 % | 440.1 | 4 206.6 | 6 255.4 | [4 887.6 — 5 216.2] |
-| Pista 4 | 6 397.4 | 63.5 % | 505.5 | 5 513.7 | 7 578.1 | [6 208.6 — 6 586.1] |
-| Pista 5 | 7 630.0 | 75.7 % | 606.2 | 6 419.5 | 8 908.6 | [7 403.7 — 7 856.4] |
+| Pista 1 | 2 707.7 | 26.9 % | 228.3 | 2 340.8 | 3 338.3 | [2 622.5 — 2 793.0] |
+| Pista 2 | 3 731.0 | 37.0 % | 300.4 | 3 166.7 | 4 653.6 | [3 618.8 — 3 843.2] |
+| Pista 3 | 5 021.0 | 49.8 % | 406.6 | 4 256.0 | 5 729.4 | [4 869.2 — 5 172.9] |
+| Pista 4 | 6 316.4 | 62.7 % | 407.5 | 5 668.7 | 6 994.4 | [6 164.3 — 6 468.5] |
+| Pista 5 | 7 620.2 | 75.6 % | 358.5 | 6 973.2 | 8 295.7 | [7 486.3 — 7 754.1] |
 
 Los intervalos de confianza al 95% se calcularon con t(29, 0.025) = 2.045.
 
 ### Resultados globales
 
 | Métrica | Valor |
-|---|---|
-| Aviones atendidos por semana (media) | 500.6 |
-| Aviones atendidos — desviación estándar | 29.1 |
-| Aviones atendidos — mínimo (entre réplicas) | 428 |
-| Aviones atendidos — máximo (entre réplicas) | 555 |
+| --- | --- |
+| Aviones atendidos por semana (media) | 504.0 |
+| Aviones atendidos — desviación estándar | 25.7 |
+| Aviones atendidos — mínimo (entre réplicas) | 452 |
+| Aviones atendidos — máximo (entre réplicas) | 547 |
 | Aviones en cola al cierre del sistema (media) | 0.00 |
-| Tiempo idle total (suma 5 pistas, media) | 25 550.9 min |
-| Tiempo idle total — desviación estándar | 1 855.8 min |
-| Tiempo idle total — mínimo | 21 755.7 min |
-| Tiempo idle total — máximo | 30 262.3 min |
-| Porcentaje idle promedio por pista | 50.7 % |
+| Tiempo idle total (suma 5 pistas, media) | 25 396.3 min |
+| Tiempo idle total — desviación estándar | 1 424.0 min |
+| Tiempo idle total — mínimo | 22 882.7 min |
+| Tiempo idle total — máximo | 28 193.9 min |
+| Porcentaje idle promedio por pista | 50.4 % |
 
 ### Consideración 1 — Asimetría entre pistas
 
-Las cinco pistas son físicamente equivalentes, sin embargo presentan tiempos de idle muy distintos: la pista 1 está libre el 27.0% del tiempo mientras que la pista 5 lo está el 75.7%. Esta diferencia de 4 909 minutos (más de 3 días) entre la pista más cargada y la menos cargada es consecuencia directa de la política de asignación: siempre se selecciona la primera pista libre disponible (índice más bajo). La pista 1 es la primera candidata en casi todos los arribos, mientras que la pista 5 solo se ocupa cuando las cuatro anteriores están simultáneamente ocupadas.
+Las cinco pistas son físicamente equivalentes, sin embargo presentan tiempos de idle muy distintos: la pista 1 está libre el 26.9% del tiempo mientras que la pista 5 lo está el 75.6%. Esta diferencia de 4 912 minutos (más de 3 días) entre la pista más cargada y la menos cargada es consecuencia directa de la política de asignación: siempre se selecciona la primera pista libre disponible (índice más bajo). La pista 1 es la primera candidata en casi todos los arribos, mientras que la pista 5 solo se ocupa cuando las cuatro anteriores están simultáneamente ocupadas.
 
 Si el objetivo fuera equilibrar el desgaste entre pistas, bastaría con cambiar la política de asignación a **round-robin** o **menor tiempo acumulado de uso**, sin modificar ninguna otra parte del modelo.
 
@@ -324,15 +328,15 @@ El sistema opera al 77% de su capacidad en promedio, con margen suficiente para 
 
 ### Consideración 3 — El combustible es el cuello de botella
 
-La recarga de combustible (media 30 min, presente en el 100% de los vuelos) domina sobre el aterrizaje (media 10 min) y sobre la carga/descarga (media 30 min pero solo en el 50% de los vuelos, contribuyendo 15 min en esperanza). En la mayoría de los aviones, la subrutina de intento de despegue se activa en el evento FIN\_COMBUSTIBLE, siendo este el último en completarse. Reducir el tiempo de repostaje sería la intervención más efectiva para aumentar el throughput del aeropuerto.
+La recarga de combustible (media 30 min, presente en el 100% de los vuelos) domina sobre el aterrizaje (media 10 min) y sobre la carga/descarga (media 30 min con una probabilidad media de ocurrencia de 0.5, contribuyendo ~15 min en esperanza). En la mayoría de los aviones, la subrutina de intento de despegue se activa en el evento FIN\_COMBUSTIBLE, siendo este el último en completarse. Reducir el tiempo de repostaje sería la intervención más efectiva para aumentar el throughput del aeropuerto.
 
 ### Consideración 4 — Impacto de la avería
 
-Con probabilidad 0.1 y una reparación de media 15 minutos, la avería añade en esperanza 1.5 minutos al ciclo de cada avión. Sobre 500 aviones por semana, esto suma aproximadamente 750 minutos (12.5 horas) de ocupación adicional en las pistas. El efecto es pequeño en términos relativos (menos del 2% del tiempo de servicio medio) pero no despreciable a escala semanal.
+Con probabilidad 0.1 y una reparación de media 15 minutos, la avería añade en esperanza 1.5 minutos al ciclo de cada avión. Sobre ~504 aviones por semana, esto suma aproximadamente 756 minutos (12.6 horas) de ocupación adicional en las pistas. El efecto es pequeño en términos relativos (menos del 2% del tiempo de servicio medio) pero no despreciable a escala semanal.
 
 ### Consideración 5 — Variabilidad entre réplicas
 
-La desviación estándar del tiempo idle total (suma de las 5 pistas) es de 1 855.8 minutos, con un rango de casi 8 507 minutos entre la réplica con menor idle (21 755.7 min) y la de mayor idle (30 262.3 min). Esto refleja la alta variabilidad inherente al sistema estocástico: una semana real puede diferir significativamente del valor esperado. Los intervalos de confianza al 95% muestran que las estimaciones son precisas (ancho del IC entre 188 y 453 minutos por pista), validando el uso de 30 réplicas.
+La desviación estándar del tiempo idle total (suma de las 5 pistas) es de 1 424.0 minutos, con un rango de 5 311 minutos entre la réplica con menor idle (22 882.7 min) y la de mayor idle (28 193.9 min). Esto refleja la variabilidad inherente al sistema estocástico: una semana real puede diferir varios miles de minutos del valor esperado. Los intervalos de confianza al 95% muestran estimaciones precisas (ancho del IC entre 171 y 450 minutos por pista), validando el uso de 30 réplicas.
 
 ### Consideración 6 — Sensibilidad al parámetro λ
 

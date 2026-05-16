@@ -84,8 +84,13 @@ class AirportSimulation:
         self.runway_free_time[runway_id] += self.clock - self.runway_last_freed[runway_id]
 
         state = PlaneState(plane_id=plane_id, runway_id=runway_id)
-        # cargo/unload: uniform probability — interpret as 50 %
-        state.unload_done = not bernoulli(0.5)
+        # cargo/unload probability is itself Uniform(0,1): draw p ~ U(0,1),
+        # then the plane loads/unloads with that probability p.
+        # Equivalent to: does a U(0,1) drawn against p succeed?
+        # Since p ~ U(0,1) and the check is U2 < p with U2 ~ U(0,1),
+        # P(load) = E[p] = 0.5, but correctly models the uniform-probability statement.
+        p_unload = uniform()
+        state.unload_done = not bernoulli(p_unload)
         self.planes[plane_id] = state
 
         # landing and refueling start simultaneously at arrival on runway
