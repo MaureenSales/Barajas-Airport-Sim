@@ -40,7 +40,7 @@ class PlaneState:
     runway_id: int
     landing_done: bool = False
     refuel_done: bool = False
-    unload_done: bool = False        # True also if no unload needed
+    unload_done: bool = False        
     needs_repair: bool = False
     repair_done: bool = False
 
@@ -49,12 +49,12 @@ class AirportSimulation:
     def __init__(self):
         self.clock: float = 0.0
         self.event_queue: List[Event] = []
-        self.arrival_queue: deque = deque()    # planes waiting for a runway
-        self.runways: List[bool] = [False] * NUM_RUNWAYS  # True = occupied
+        self.arrival_queue: deque = deque()    
+        self.runways: List[bool] = [False] * NUM_RUNWAYS  
 
-        # time each runway has been free
+        
         self.runway_free_time: List[float] = [0.0] * NUM_RUNWAYS
-        # last time runway became free (to accumulate idle time)
+        
         self.runway_last_freed: List[float] = [0.0] * NUM_RUNWAYS
 
         self.planes: Dict[int, PlaneState] = {}
@@ -80,20 +80,15 @@ class AirportSimulation:
     def _assign_runway(self, plane_id: int, runway_id: int) -> None:
         """Mark runway as occupied and start landing sequence for plane."""
         self.runways[runway_id] = True
-        # accumulate idle time for this runway up to now
+        
         self.runway_free_time[runway_id] += self.clock - self.runway_last_freed[runway_id]
 
         state = PlaneState(plane_id=plane_id, runway_id=runway_id)
-        # cargo/unload probability is itself Uniform(0,1): draw p ~ U(0,1),
-        # then the plane loads/unloads with that probability p.
-        # Equivalent to: does a U(0,1) drawn against p succeed?
-        # Since p ~ U(0,1) and the check is U2 < p with U2 ~ U(0,1),
-        # P(load) = E[p] = 0.5, but correctly models the uniform-probability statement.
+        
         p_unload = uniform()
         state.unload_done = not bernoulli(p_unload)
         self.planes[plane_id] = state
 
-        # landing and refueling start simultaneously at arrival on runway
         landing_duration = max(0.0, normal(LANDING_MU, LANDING_SIGMA2))
         refuel_duration = exponential(REFUEL_RATE)
 
@@ -109,7 +104,7 @@ class AirportSimulation:
         state = self.planes[plane_id]
         if not (state.landing_done and state.refuel_done and state.unload_done):
             return
-        # breakdown check happens right before takeoff
+        
         state.needs_repair = bernoulli(BREAKDOWN_PROB)
         if state.needs_repair and not state.repair_done:
             repair_duration = exponential(REPAIR_RATE)
@@ -129,7 +124,6 @@ class AirportSimulation:
         plane_id = self.next_plane_id
         self.next_plane_id += 1
 
-        # schedule next arrival (only if within simulation time)
         next_arrival = self.clock + exponential(ARRIVAL_RATE)
         if next_arrival <= SIMULATION_TIME:
             self._push(Event(next_arrival, EventType.ARRIVAL, -1))
@@ -158,7 +152,7 @@ class AirportSimulation:
     def _handle_repair_end(self, plane_id: int) -> None:
         state = self.planes[plane_id]
         state.repair_done = True
-        # now proceed to takeoff
+        
         takeoff_duration = max(0.0, normal(TAKEOFF_MU, TAKEOFF_SIGMA2))
         self._push(Event(self.clock + takeoff_duration, EventType.TAKEOFF_END,
                          plane_id, state.runway_id))
@@ -186,8 +180,6 @@ class AirportSimulation:
         while self.event_queue:
             event = self._pop()
 
-            # stop processing arrivals past simulation horizon;
-            # continue processing departures until runways empty
             if event.etype == EventType.ARRIVAL and event.time > SIMULATION_TIME:
                 continue
             if event.etype != EventType.ARRIVAL and not self.planes and not self.arrival_queue:
@@ -208,7 +200,6 @@ class AirportSimulation:
             elif event.etype == EventType.TAKEOFF_END:
                 self._handle_takeoff_end(event.plane_id, event.runway_id)
 
-        # accumulate idle time for runways still free at end
         for i in range(NUM_RUNWAYS):
             if not self.runways[i]:
                 self.runway_free_time[i] += self.clock - self.runway_last_freed[i]

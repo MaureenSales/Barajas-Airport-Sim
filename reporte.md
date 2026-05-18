@@ -13,15 +13,27 @@
 | **Asignatura** | Simulación |
 | **Problema asignado** | Problema 5 — Aeropuerto de Barajas |
 | **Lenguaje de implementación** | Python 3 |
-| **Repositorio** | [ENLACE_GITHUB] |
+| **Repositorio** | <https://github.com/MaureenSales/Barajas-Airport-Sim.git> |
 
 ---
 
 ## Orden del Problema Asignado
 
-### Problema 5 — Aeropuerto de Barajas
+En el Aeropuerto de Barajas, se desea conocer cuánto tiempo se encuentran vacías las pistas de aterrizaje. Se conoce que el aeropuerto cuenta con un máximo de 5 pistas de aterrizaje dedicadas a aviones de carga y que se considera que una pista está ocupada cuando hay un avión aterrizando, despegando o cuando se encuentra cargando o descargando mercancía o el abordaje o aterrizaje de cada pasajero.
 
-El Aeropuerto de Barajas cuenta con 5 pistas de aterrizaje dedicadas a aviones de carga. Se considera que una pista está ocupada cuando hay un avión aterrizando, despegando, cargando o descargando mercancía, o recargando combustible. El objetivo es simular el comportamiento del aeropuerto durante una semana y **estimar el tiempo total en que se encuentra vacía cada una de las 5 pistas**.
+Se conoce que el tiempo cada avión que arriba al aeropuerto distribuye, mediante una función de distribución exponencial con λ = 20 minutos.
+
+Si un avión arriba al aeropuerto y no existen pistas vacías, se mantiene esperando hasta que se vacíe una de ellas (en caso de que existan varios aviones en esta situación, pues se establece una suerte de cola para su aterrizaje.
+
+Se conoce además que el tiempo de carga y descarga de un avión distribuye mediante una función de distribución exponencial con λ = 30 minutos. Se considera además que el tiempo de aterrizaje y despegue de un avión distribuye normal (N(10,5)) y la probabilidad de que un avión cargue y/o descargue en cada viaje corresponde a una distribución uniforme.
+
+Además de esto se conoce que los aviones tiene una probabilidad de tener una rotura de 0.1. Así, cuando un avión posee alguna rotura debe ser reparado en un tiempo que distribuye exponencial con λ = 15 minutos. Las roturas se identifican justo antes del despegue de cada avión.
+
+Igualmente cada avión, durante el tiempo que está en la pista debe recargar combustible y se conoce que el tiempo de recarga de combustible distribuye expoencial λ = 30 minutos y se comienza justamente cuando el avión aterriza.
+
+Se asume además que los aviones pueden aterrizar en cada pista sin ninguna preferencia o requerimiento.
+
+Simule el comportamiento del aeropuerto por una semana para estimar el tiempo total en que se encuentran vacía cada una de las pistas del aeropuerto.
 
 ---
 
@@ -238,47 +250,6 @@ Al finalizar, para cada pista i que esté libre en el instante final t\_fin:
 runway_free_time[i] += t_fin − runway_last_freed[i]
 ```
 
-### Generación de variables aleatorias
-
-Todas las muestras se generan a partir de un **generador congruencial lineal (LCG)** con la recurrencia:
-
-```text
-X_{n+1} = (1 664 525 · X_n + 1 013 904 223)  mod  2³²
-U_n = X_n / 2³²
-```
-
-que produce valores U_n ∈ [0, 1) aproximando una distribución U(0, 1).
-
-**Distribución Exponencial — método de la transformada inversa:**
-
-Dado que la CDF de Exp(λ) es F(x) = 1 − e^(−λx), su inversa es F⁻¹(u) = −(1/λ)·ln(1−u). Como 1−U tiene la misma distribución que U cuando U ~ U(0,1):
-
-```text
-X = −(1/λ) · ln(U)
-```
-
-**Distribución Normal — método de Box-Muller:**
-
-Con dos uniformes independientes U₁, U₂ ~ U(0,1):
-
-```text
-Z = √(−2 ln U₁) · cos(2π U₂)
-X = μ + σ · Z,   con σ = √σ²
-```
-
-Z sigue una distribución N(0,1), por lo que X ~ N(μ, σ²). Dado que la normal puede tomar valores negativos, se aplica max(0, X) para los tiempos de aterrizaje y despegue.
-
-**Variable de Bernoulli — comparación con umbral:**
-
-```text
-X = True   si U < p
-X = False  si U ≥ p
-```
-
-con U ~ U(0,1). Se usa con p = 0.1 para la avería. Para la carga/descarga, la probabilidad p en sí es una variable U(0,1): se genera p ~ U(0,1) para cada avión y luego se evalúa un segundo U contra ese p, modelando que la probabilidad de cargar/descargar es aleatoria y uniforme.
-
----
-
 ## Consideraciones Obtenidas a partir de la Ejecución de las Simulaciones
 
 Se ejecutaron **30 réplicas independientes** del sistema, cada una simulando una semana completa de operación (T = 10 080 minutos). Los resultados reales obtenidos son los siguientes.
@@ -347,9 +318,3 @@ Un incremento en la tasa de llegadas reduciría el tiempo idle de todas las pist
 ```
 
 El valor actual λ = 1/20 = 0.05 aviones/min está un 23% por debajo de ese umbral. Un aumento del tráfico aéreo de un 20-23% llevaría el sistema al límite de su capacidad, con colas creciendo indefinidamente.
-
----
-
-## Enlace al Repositorio en GitHub
-
-[ENLACE_GITHUB]
